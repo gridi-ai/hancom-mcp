@@ -9,15 +9,16 @@
 2. ✅ B-04 — `delete_paragraph` / `delete_table` / `clear_section` (PR #2 머지)
 3. ⏳ B-12 — patched 저장 표준 엔트리 자동 보충 (CRITICAL: 손상 경고 원인)
 4. ⏳ B-13 — 변환 후 paragraph ID 정규화 (CRITICAL: hwp2hwpx ID 충돌)
-5. ⏳ B-01 — `insert_image`
-6. ⏳ B-02 — `set_run_style` (CharShape)
-7. ⏳ B-03 — 표 후편집 도구 묶음 (merge_cells, add_row 등)
-8. ⏳ B-05 — page break + header/footer
-9. ⏳ B-07 — Field API
-10. ⏳ B-08 — hwpctl 30 Actions 호환층
-11. ⏳ B-10 — viewer 를 한컴 → rhwp 전환
-12. ⏳ B-11 — rhwp fork 후 WS 라이브 프리뷰 + upstream PR
-13. ⏳ B-09 — `@rhwp/core` WASM 백엔드 통합 PoC
+5. ⏳ B-14 — XML 직렬화 namespace 보존 (CRITICAL: ET 가 13개 prefix 제거)
+6. ⏳ B-01 — `insert_image`
+7. ⏳ B-02 — `set_run_style` (CharShape)
+8. ⏳ B-03 — 표 후편집 도구 묶음 (merge_cells, add_row 등)
+9. ⏳ B-05 — page break + header/footer
+10. ⏳ B-07 — Field API
+11. ⏳ B-08 — hwpctl 30 Actions 호환층
+12. ⏳ B-10 — viewer 를 한컴 → rhwp 전환
+13. ⏳ B-11 — rhwp fork 후 WS 라이브 프리뷰 + upstream PR
+14. ⏳ B-09 — `@rhwp/core` WASM 백엔드 통합 PoC
 
 ## 종료 조건
 

@@ -97,6 +97,22 @@
   - 통합 테스트: 변환 → ID 검증 → 한컴 뷰어 정상 오픈.
 - **참고**: 사용자 보고 (2026-04-26, B-12 보충 후에도 손상 지속). 큐 우선순위 B-12 다음.
 
+### B-14 🔴 XML 직렬화 시 namespace prefix 보존
+- **문제**: `xml_io.serialize` (ElementTree 기반) 가 element tag 에 직접 사용되지
+  않은 namespace prefix (예: `hp10`, `hc`, `hh`, `ha`, `hhs`, `hm`, `hpf`,
+  `hwpunitchar`, `ooxmlchart`, `epub`, `config`, `dc`, `opf` 등 13개) 를
+  stripping. 한컴 뷰어는 이런 prefix 가 깊은 element 의 attribute 값에
+  쓰이거나 fallback 검증에 필요할 수 있는데 빠지면 손상으로 판정.
+- **재현**: 양식 hwpx 변환 → save_document → 결과 section0.xml 의
+  `xmlns:` 개수 확인 — 원본 15개에서 2개로 축소.
+- **수용 기준**:
+  - `xml_io` 가 직렬화 시 root element 에 등록된 모든 namespace 를
+    그대로 출력.
+  - XML 선언이 `<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>`
+    형식 (큰따옴표, 대문자 UTF-8, standalone) 으로 보존.
+  - 통합 테스트: convert → save → namespace 15개·XML 선언 형식 동일 여부 검증.
+- **참고**: 사용자 보고 (2026-04-26, B-12+B-13 후에도 손상 지속).
+
 ## v0.3.x — hwpctl 호환 레이어
 
 ### B-07 🟠 Field API
