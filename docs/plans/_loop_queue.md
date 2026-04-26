@@ -6,17 +6,17 @@
 ## 처리 순서
 
 1. ✅ B-06 — 표준 스타일 자동 탑재 (PR #1, 머지 완료 2026-04-26)
-2. ✅ B-04 — `delete_paragraph` / `delete_table` / `clear_section` (PR 머지 예정)
+2. ✅ B-04 — `delete_paragraph` / `delete_table` / `clear_section` (PR #2 머지)
 3. ⏳ B-12 — patched 저장 표준 엔트리 자동 보충 (CRITICAL: 손상 경고 원인)
 4. ⏳ B-01 — `insert_image`
-4. ⏳ B-02 — `set_run_style` (CharShape)
-5. ⏳ B-03 — 표 후편집 도구 묶음 (merge_cells, add_row 등)
-6. ⏳ B-05 — page break + header/footer
-7. ⏳ B-07 — Field API
-8. ⏳ B-08 — hwpctl 30 Actions 호환층
-9. ⏳ B-10 — viewer 를 한컴 → rhwp 전환
-10. ⏳ B-11 — rhwp fork 후 WS 라이브 프리뷰 + upstream PR
-11. ⏳ B-09 — `@rhwp/core` WASM 백엔드 통합 PoC
+5. ⏳ B-02 — `set_run_style` (CharShape)
+6. ⏳ B-03 — 표 후편집 도구 묶음 (merge_cells, add_row 등)
+7. ⏳ B-05 — page break + header/footer
+8. ⏳ B-07 — Field API
+9. ⏳ B-08 — hwpctl 30 Actions 호환층
+10. ⏳ B-10 — viewer 를 한컴 → rhwp 전환
+11. ⏳ B-11 — rhwp fork 후 WS 라이브 프리뷰 + upstream PR
+12. ⏳ B-09 — `@rhwp/core` WASM 백엔드 통합 PoC
 
 ## 종료 조건
 
