@@ -103,12 +103,26 @@ def cleanup_document(
 
 
 @mcp.tool()
-def create_document(title: str = "Untitled", doc_id: str | None = None) -> str:
-    """새 HWPX 문서를 생성합니다."""
+def create_document(
+    title: str = "Untitled",
+    doc_id: str | None = None,
+    template: str = "default",
+) -> str:
+    """새 HWPX 문서를 생성합니다.
+
+    template:
+        - "default" (기본값) — 한컴 표준 22개 스타일 카탈로그 탑재
+          (바탕글, 본문, 개요1~10, 머리말, 각주, 미주, 메모,
+          차례 제목, 차례1~3, 캡션, 쪽 번호).
+          insert_text(style="개요 1") 등이 즉시 동작.
+        - "empty" — 본문 1개 스타일만 가진 최소 문서.
+    """
     if doc_id is None:
         doc_id = f"doc_{len(_documents)}"
-    _documents[doc_id] = create_hwpx(title=title)
-    return _dump({"doc_id": doc_id, "title": title, "status": "created"})
+    _documents[doc_id] = create_hwpx(title=title, template=template)
+    return _dump(
+        {"doc_id": doc_id, "title": title, "template": template, "status": "created"}
+    )
 
 
 @mcp.tool()
