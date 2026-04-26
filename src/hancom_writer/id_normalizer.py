@@ -24,28 +24,29 @@ from .writer import _pack_zip
 def normalize_paragraph_ids(hwpx_path: str) -> int:
     """Renumber every ``<hp:p>`` in every section XML inside the .hwpx zip.
 
-    Returns the total number of paragraphs visited (including the secPr
-    paragraph that is reset to id=0). Returns 0 — and leaves the file
-    untouched — when the zip contains no section XML.
+    Returns the number of paragraphs whose ``id`` attribute was actually
+    rewritten. Returns 0 — and leaves the zip bytes untouched (no timestamp
+    churn, no checksum invalidation) — when every section already has the
+    canonical numbering.
     """
     path = Path(hwpx_path)
     with zipfile.ZipFile(path, "r") as zin:
         entries = {name: zin.read(name) for name in zin.namelist()}
 
-    total = 0
+    changed = 0
     rewrote_any = False
     for name in list(entries):
         if not _is_section_xml(name):
             continue
-        new_bytes, count = _renumber_section(entries[name])
-        if count > 0:
+        new_bytes, section_changed = _renumber_section(entries[name])
+        if section_changed > 0:
             entries[name] = new_bytes
-            total += count
+            changed += section_changed
             rewrote_any = True
 
     if rewrote_any:
         path.write_bytes(_pack_zip(entries))
-    return total
+    return changed
 
 
 def _is_section_xml(name: str) -> bool:
@@ -57,16 +58,18 @@ def _renumber_section(xml_bytes: bytes) -> tuple[bytes, int]:
     p_qname = ns("hp", "p")
     sec_pr_qname = ns("hp", "secPr")
     next_id = 1
-    count = 0
+    changed = 0
     for p_el in root.iter(p_qname):
-        if p_el.find(sec_pr_qname) is not None:
-            # Section-properties paragraph keeps id=0 (B-13a). Hancom's own
-            # boilerplate uses id=0 here and rejects renumbering of this slot.
-            p_el.set("id", "0")
-        else:
-            p_el.set("id", str(next_id))
+        # <hp:secPr> appears as a direct child of its paragraph in OWPML, but
+        # use iter() to match _patch_section's invariant exactly so a future
+        # nested secPr doesn't silently misclassify the paragraph.
+        is_sec_pr_p = next(iter(p_el.iter(sec_pr_qname)), None) is not None
+        new_id = "0" if is_sec_pr_p else str(next_id)
+        if not is_sec_pr_p:
             next_id += 1
-        count += 1
-    if count == 0:
+        if p_el.get("id") != new_id:
+            p_el.set("id", new_id)
+            changed += 1
+    if changed == 0:
         return xml_bytes, 0
-    return xml_io.serialize(root), count
+    return xml_io.serialize(root), changed

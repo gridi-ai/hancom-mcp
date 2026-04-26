@@ -118,10 +118,27 @@ def test_normalizes_table_inner_paragraphs(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-def test_returns_total_renumbered_count(tmp_path: Path) -> None:
+def test_returns_count_of_actually_changed_ids(tmp_path: Path) -> None:
     hwpx = _zip_with_section(tmp_path, SECTION_DUPLICATE_IDS)
     count = id_normalizer.normalize_paragraph_ids(str(hwpx))
-    assert count == 4  # 4 hp:p elements in the section
+    # Section has 4 paragraphs whose original ids are 0,0,2147483648,0.
+    # After renumber: 1,2,3,0. The secPr paragraph keeps id=0 unchanged,
+    # so only the first three actually change.
+    assert count == 3
+
+
+@pytest.mark.unit
+def test_already_normalized_section_does_not_rewrite_zip(
+    tmp_path: Path,
+) -> None:
+    """Idempotent: re-running on a clean file must not touch the bytes."""
+    hwpx = _zip_with_section(tmp_path, SECTION_DUPLICATE_IDS)
+    id_normalizer.normalize_paragraph_ids(str(hwpx))
+    snapshot = hwpx.read_bytes()
+
+    count = id_normalizer.normalize_paragraph_ids(str(hwpx))
+    assert count == 0
+    assert hwpx.read_bytes() == snapshot
 
 
 @pytest.mark.unit
@@ -166,3 +183,82 @@ def test_convert_invokes_normalizer(tmp_path: Path) -> None:
         section = z.read("Contents/section0.xml")
     ids = _para_ids(section)
     assert ids == ["1", "2", "3", "0"]
+
+
+@pytest.mark.integration
+def test_convert_runs_normalizer_before_fill_patch(tmp_path: Path) -> None:
+    """Order matters: normalize_ids must precede patch_hwpx_from_hwp so the
+    fill-patch step sees canonical IDs and never mutates an XML the
+    normalizer is about to rewrite."""
+    fake_hwp = tmp_path / "in.hwp"
+    fake_hwp.write_bytes(b"\x00")
+    fake_hwpx = tmp_path / "out.hwpx"
+
+    call_order: list[str] = []
+
+    def fake_run_jar(source: Path, target: Path, *, timeout: int) -> None:
+        call_order.append("run_jar")
+        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(
+                zipfile.ZipInfo("mimetype"),
+                T.MIMETYPE.encode("utf-8"),
+                compress_type=zipfile.ZIP_STORED,
+            )
+            zf.writestr("Contents/section0.xml", SECTION_DUPLICATE_IDS)
+
+    def fake_normalize(path: str) -> int:
+        call_order.append("normalize")
+        return 0
+
+    def fake_patch(hwp: str, hwpx: str):
+        call_order.append("patch")
+
+        class R:
+            def as_dict(self):
+                return {}
+
+        return R()
+
+    with mock.patch.object(conversion, "_run_jar", side_effect=fake_run_jar), \
+         mock.patch.object(
+             conversion.id_normalizer,
+             "normalize_paragraph_ids",
+             side_effect=fake_normalize,
+         ), \
+         mock.patch.object(
+             conversion.hwp_patcher,
+             "patch_hwpx_from_hwp",
+             side_effect=fake_patch,
+         ):
+        conversion.convert_hwp_to_hwpx(str(fake_hwp), str(fake_hwpx))
+
+    assert call_order == ["run_jar", "normalize", "patch"]
+
+
+@pytest.mark.integration
+def test_convert_skips_normalizer_when_disabled(tmp_path: Path) -> None:
+    fake_hwp = tmp_path / "in.hwp"
+    fake_hwp.write_bytes(b"\x00")
+    fake_hwpx = tmp_path / "out.hwpx"
+
+    def fake_run_jar(source: Path, target: Path, *, timeout: int) -> None:
+        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(
+                zipfile.ZipInfo("mimetype"),
+                T.MIMETYPE.encode("utf-8"),
+                compress_type=zipfile.ZIP_STORED,
+            )
+            zf.writestr("Contents/section0.xml", SECTION_DUPLICATE_IDS)
+
+    with mock.patch.object(conversion, "_run_jar", side_effect=fake_run_jar), \
+         mock.patch.object(
+             conversion.id_normalizer,
+             "normalize_paragraph_ids",
+         ) as mock_norm:
+        conversion.convert_hwp_to_hwpx(
+            str(fake_hwp),
+            str(fake_hwpx),
+            patch_fills=False,
+            normalize_ids=False,
+        )
+        mock_norm.assert_not_called()
