@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-import tempfile
 import zipfile
 from pathlib import Path
 
@@ -14,10 +13,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from hancom_writer import templates as T
 from hancom_writer import writer
 from hancom_writer.models import HwpxDocument, Paragraph, Section
-
-
-HP_NS = T.NAMESPACES["hp"]
-LINESEG_TAG = f"{{{HP_NS}}}linesegarray"
 
 
 SECTION_XML_WITH_LINESEG = (
@@ -61,11 +56,12 @@ def _patched_doc_with_lineseg() -> HwpxDocument:
 
 
 @pytest.mark.unit
-def test_patched_save_strips_linesegarray_from_all_paragraphs() -> None:
+def test_patched_save_strips_linesegarray_from_all_paragraphs(
+    tmp_path: Path,
+) -> None:
     doc = _patched_doc_with_lineseg()
-    with tempfile.NamedTemporaryFile(suffix=".hwpx", delete=False) as f:
-        out = f.name
-    writer.save_hwpx(doc, out)
+    out = tmp_path / "lineseg.hwpx"
+    writer.save_hwpx(doc, str(out))
 
     with zipfile.ZipFile(out) as z:
         section = z.read("Contents/section0.xml")
@@ -76,11 +72,12 @@ def test_patched_save_strips_linesegarray_from_all_paragraphs() -> None:
 
 
 @pytest.mark.unit
-def test_patched_save_preserves_text_runs_when_stripping_linesegarray() -> None:
+def test_patched_save_preserves_text_runs_when_stripping_linesegarray(
+    tmp_path: Path,
+) -> None:
     doc = _patched_doc_with_lineseg()
-    with tempfile.NamedTemporaryFile(suffix=".hwpx", delete=False) as f:
-        out = f.name
-    writer.save_hwpx(doc, out)
+    out = tmp_path / "preserve.hwpx"
+    writer.save_hwpx(doc, str(out))
 
     with zipfile.ZipFile(out) as z:
         section = z.read("Contents/section0.xml").decode("utf-8")
@@ -93,16 +90,15 @@ def test_patched_save_preserves_text_runs_when_stripping_linesegarray() -> None:
 
 
 @pytest.mark.unit
-def test_new_save_does_not_emit_linesegarray() -> None:
+def test_new_save_does_not_emit_linesegarray(tmp_path: Path) -> None:
     """Freshly built docs (B-06 path) must also omit lineseg layout cache."""
     doc = HwpxDocument(title="t")
     section = Section(index=0)
     section.paragraphs.append(Paragraph(id=1, text="hello"))
     doc.sections.append(section)
 
-    with tempfile.NamedTemporaryFile(suffix=".hwpx", delete=False) as f:
-        out = f.name
-    writer.save_hwpx(doc, out)
+    out = tmp_path / "new.hwpx"
+    writer.save_hwpx(doc, str(out))
 
     with zipfile.ZipFile(out) as z:
         section_bytes = z.read("Contents/section0.xml")
