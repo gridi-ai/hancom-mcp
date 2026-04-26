@@ -7,7 +7,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import cleanup, hwp_patcher
+from . import cleanup, hwp_patcher, id_normalizer
 from .reader import read_hwpx
 from .writer import save_hwpx
 
@@ -43,6 +43,7 @@ def convert_hwp_to_hwpx(
     normalize_colors: bool = False,
     remove_dotted_borders: bool = False,
     patch_fills: bool = True,
+    normalize_ids: bool = True,
     timeout: int = DEFAULT_TIMEOUT_SEC,
 ) -> ConversionResult:
     """Convert a .hwp file to .hwpx, optionally applying cleanup post-processing.
@@ -67,6 +68,13 @@ def convert_hwp_to_hwpx(
     target.parent.mkdir(parents=True, exist_ok=True)
 
     _run_jar(source, target, timeout=timeout)
+
+    # B-13: hwp2hwpx leaves duplicate paragraph IDs (id="0" repeated, plus
+    # out-of-range values like 2^31). Hancom Viewer rejects these as corrupted,
+    # so we renumber per-section before any other post-processing inspects the
+    # XML.
+    if normalize_ids:
+        id_normalizer.normalize_paragraph_ids(str(target))
 
     patch_report: hwp_patcher.PatchReport | None = None
     if patch_fills:
