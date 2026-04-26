@@ -20,7 +20,10 @@ def save_hwpx(doc: HwpxDocument, file_path: str) -> str:
     path = Path(file_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    if doc.raw_zip:
+    # A doc loaded from disk has the full zip (mimetype etc.). A doc created
+    # via create_hwpx may have only a pre-populated header.xml (template
+    # marker) — that still needs the full template-based build.
+    if "mimetype" in doc.raw_zip:
         payload = _build_patched_zip(doc)
     else:
         payload = _build_new_zip(doc)
@@ -175,7 +178,10 @@ def _build_new_zip(doc: HwpxDocument) -> bytes:
     entries["Contents/content.hpf"] = T.content_hpf(
         title=doc.title, section_count=len(doc.sections)
     ).encode("utf-8")
-    entries["Contents/header.xml"] = T.HEADER_XML.encode("utf-8")
+    # Prefer the template-aware header that create_hwpx pre-populates.
+    entries["Contents/header.xml"] = doc.raw_zip.get(
+        "Contents/header.xml", T.HEADER_XML.encode("utf-8")
+    )
     entries["Scripts/headerScripts"] = T.HEADER_SCRIPTS
     entries["Scripts/sourceScripts"] = T.SOURCE_SCRIPTS
 

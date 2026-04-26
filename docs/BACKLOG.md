@@ -83,6 +83,28 @@
 
 ## v0.4.x — rhwp 코어 통합
 
+### B-10 🟠 viewer를 한컴 → rhwp 로 전환
+- **문제**: `viewer.py` 가 macOS 한컴 오피스 앱(설치 필요·유료·플랫폼 종속)에 의존.
+  공개 배포본에서 누구나 결과를 보려면 OSS 뷰어가 필요.
+- **수용 기준**:
+  - `viewer.py` 가 [`@rhwp/editor`](https://www.npmjs.com/package/@rhwp/editor) 또는
+    [edwardkim.github.io/rhwp](https://edwardkim.github.io/rhwp/) 데모를 백엔드로
+    선택 가능 (`HANCOM_MCP_VIEWER` 환경변수).
+  - `save_document(auto_reload=True)` 호출 시 rhwp 뷰어가 같은 HWPX 를 자동 갱신.
+  - 한컴 미설치 환경에서 macOS/Windows/Linux 동일 동작.
+- **참고**: 사용자 직접 요청
+
+### B-11 🔴 rhwp 뷰어에 MCP 변경 실시간 반영 (live preview)
+- **문제**: 매 `save_document` 후 수동 reload 가 아닌, 메모리 변경분을 즉시
+  뷰어에 푸시하면 사업계획서 작성 흐름이 훨씬 빨라짐.
+- **수용 기준**:
+  - 로컬 WS 서버(`ws://localhost:<port>`) — 단락/표 변경 이벤트를 broadcast
+  - rhwp 측에 가벼운 패치 (Iframe `postMessage` 또는 자체 fork 의 listener 추가)
+  - `insert_text` 직후 100ms 안에 뷰어가 반영 (저장 없이)
+  - rhwp 자체가 이를 제공하지 않을 경우 우리가 fork 하거나 plugin 으로 기여
+- **선행조사**: rhwp 가 file watch / WS / postMessage 를 이미 노출하는지 확인
+  필요. 결과는 plan 단계에서 정리.
+
 ### B-09 🟢 `@rhwp/core` WASM 백엔드 통합 PoC
 - **문제**: 자체 XML 패칭은 한컴 호환성 한계가 있음.
 - **수용 기준**:
