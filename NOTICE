@@ -1,0 +1,53 @@
+hancom-mcp
+Copyright 2026 gridi-ai
+
+This product includes software developed by third parties listed below.
+
+================================================================================
+Bundled Java libraries (under lib/)
+================================================================================
+
+The following Apache License 2.0 licensed JAR files are bundled in lib/ for
+HWP binary parsing and HWP→HWPX conversion. The full Apache License 2.0
+text is in licenses/Apache-2.0.txt.
+
+1. hwp2hwpx.jar
+   - Source:  https://github.com/neolord0/hwp2hwpx
+   - Version: bundled build (Main-Class: kr.dogfoot.hwp2hwpx.Main)
+   - License: Apache License 2.0
+   - Author:  Park Sungkyon (@neolord0)
+
+2. hwplib.jar
+   - Source:  https://github.com/neolord0/hwplib
+   - Version: 1.1.10
+   - License: Apache License 2.0
+   - Author:  Park Sungkyon (@neolord0)
+
+3. hwpxlib.jar
+   - Source:  https://github.com/neolord0/hwpxlib
+   - Version: 1.0.8
+   - License: Apache License 2.0
+   - Author:  Park Sungkyon (@neolord0)
+
+================================================================================
+Auxiliary helpers (lib/hwpfilldump.jar, lib/hwptabledump.jar)
+================================================================================
+
+These JARs are compiled from lib/java-src/HwpFillDump.java and
+lib/java-src/HwpTableDump.java, which are part of this project (MIT License).
+They depend on hwplib.jar at runtime.
+
+================================================================================
+Python dependencies
+================================================================================
+
+- mcp        — MIT License — https://github.com/modelcontextprotocol/python-sdk
+- lxml       — BSD 3-Clause License — https://lxml.de/
+
+================================================================================
+Inspiration
+================================================================================
+
+The roadmap and feature comparisons reference rhwp
+(https://github.com/edwardkim/rhwp, MIT License) for design ideas only. No
+source code from rhwp is included in this repository.
