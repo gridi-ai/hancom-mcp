@@ -126,6 +126,25 @@ def _patch_section(root, section: Section) -> None:
             for c_idx, tc_el in enumerate(tr_el.findall(ns("hp", "tc"))):
                 _patch_cell(tc_el, (tbl_id, r_idx, c_idx), cell_text_map)
 
+    _strip_linesegarray(root)
+
+
+def _strip_linesegarray(root) -> None:
+    """Drop every <hp:linesegarray> so Hancom Viewer recomputes layout (B-15).
+
+    HWPX paragraphs cache their per-line layout (textpos / textheight / vertSize)
+    inside <hp:linesegarray>. Once the underlying text length changes, that
+    cache disagrees with the runs and Hancom Viewer flags the file as corrupted
+    (verified by the G2 case: two hp:t edits in one paragraph, total length
+    delta −71). Removing the cache forces Hancom Viewer to relayout from the
+    runs, which is exactly what fixes the K2b verification case.
+    """
+    lineseg_qname = ns("hp", "linesegarray")
+    for lsa in list(root.iter(lineseg_qname)):
+        parent = lsa.getparent()
+        if parent is not None:
+            parent.remove(lsa)
+
 
 def _set_paragraph_text(p_el: ET.Element, new_text: str) -> None:
     """Put new_text in the first <hp:t>, blank out the rest, preserving runs."""
