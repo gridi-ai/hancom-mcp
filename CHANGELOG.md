@@ -11,6 +11,12 @@
 - 번들 Java 라이브러리(Apache 2.0)에 대한 `NOTICE` 및 `licenses/Apache-2.0.txt`.
 - `docs/BACKLOG.md` — rhwp 비교 분석 기반 우선순위 백로그(B-01~B-11, O-01~O-04).
 - `CONTRIBUTING.md` — `/ecc:plan → /ecc:tdd → /ecc:review-pr` 워크플로우.
+- **B-12**: patched 저장 시 누락된 한컴 표준 엔트리 4종을 자동 보충.
+  `Preview/PrvText.txt` (doc 전체 텍스트 500자), `Scripts/headerScripts`,
+  `Scripts/sourceScripts`, `META-INF/container.rdf` 가 raw_zip 에 없으면
+  `_build_patched_zip` 이 보일러플레이트로 채움. raw_zip 에 이미 있는
+  엔트리는 보존. 한컴 뷰어가 변환→편집→저장 흐름의 결과를 손상으로
+  판정하는 문제를 해결.
 - **B-04**: 콘텐츠 제거 도구 — `delete_paragraph(doc_id, paragraph_id)`,
   `delete_table(doc_id, table_id)`, `clear_section(doc_id, section_index)`
   세 개의 MCP 도구. 미발견 ID 는 `LookupError`. 빈 섹션에서는 no-op.

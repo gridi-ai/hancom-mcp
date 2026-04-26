@@ -48,7 +48,28 @@ def _build_patched_zip(doc: HwpxDocument) -> bytes:
         _patch_section(root, section)
         patched[section_path] = xml_io.serialize(root)
 
+    _ensure_standard_boilerplate(patched, doc)
     return _pack_zip(patched)
+
+
+def _ensure_standard_boilerplate(
+    entries: dict[str, bytes], doc: HwpxDocument
+) -> None:
+    """Fill in entries that hwp2hwpx omits but Hancom Viewer expects (B-12).
+
+    Hancom output ships ``Preview/PrvText.txt``, ``Scripts/headerScripts``,
+    ``Scripts/sourceScripts`` and ``META-INF/container.rdf``; ``hwp2hwpx``
+    skips them, which makes Hancom Viewer flag the round-tripped file as
+    corrupted. Existing entries are preserved.
+    """
+    if "Preview/PrvText.txt" not in entries:
+        entries["Preview/PrvText.txt"] = doc.get_all_text()[:500].encode("utf-8")
+    if "Scripts/headerScripts" not in entries:
+        entries["Scripts/headerScripts"] = T.HEADER_SCRIPTS
+    if "Scripts/sourceScripts" not in entries:
+        entries["Scripts/sourceScripts"] = T.SOURCE_SCRIPTS
+    if "META-INF/container.rdf" not in entries:
+        entries["META-INF/container.rdf"] = T.CONTAINER_RDF.encode("utf-8")
 
 
 def _patch_section(root, section: Section) -> None:
