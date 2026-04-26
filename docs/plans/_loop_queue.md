@@ -10,7 +10,7 @@
 3. ✅ B-12 — patched 저장 표준 엔트리 자동 보충 (PR #3 머지)
 4. ✅ B-15 — patched 저장 시 `<hp:linesegarray>` 통째 제거 (근본 해결책)
 5. ✅ B-13 — 변환 후 paragraph ID 정규화 (secPr id=0 보존)
-6. ⏳ B-01 — `insert_image`
+6. ✅ B-01 — `insert_image` (MVP: PNG/JPEG, treat-as-char, _build_new_zip 경로)
 7. ⏳ B-02 — `set_run_style` (CharShape)
 8. ⏳ B-03 — 표 후편집 도구 묶음 (merge_cells, add_row 등)
 9. ⏳ B-05 — page break + header/footer

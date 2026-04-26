@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from . import styles
-from .models import HwpxDocument, Paragraph, Table, TableCell
+from .models import HwpxDocument, InlineImage, Paragraph, Table, TableCell
+
+# Image extensions we know how to declare in HWPX manifest/header (B-01 MVP).
+_IMAGE_MEDIA_TYPES: dict[str, str] = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
 
 
 def insert_text(
@@ -82,6 +91,60 @@ def _replace_in_cell(cell: TableCell, search: str, replace: str) -> int:
         count += cell.text.count(search)
         cell.text = cell.text.replace(search, replace)
     return count
+
+
+def insert_image(
+    doc: HwpxDocument,
+    image_path: str,
+    width_mm: float,
+    height_mm: float,
+    section_index: int = 0,
+) -> Paragraph:
+    """Append a new paragraph carrying an inline image (B-01 MVP).
+
+    Supports PNG and JPEG; the anchor mode is treat-as-char (image flows
+    inline with text). Bytes are read once and stashed on the document under
+    ``BinData/imageN.<ext>``; the writer emits the corresponding manifest,
+    header binDataList, and ``<hp:pic>`` markup at save time.
+    """
+    src = Path(image_path)
+    if not src.exists():
+        raise FileNotFoundError(f"Image not found: {image_path}")
+    suffix = src.suffix.lower()
+    media = _IMAGE_MEDIA_TYPES.get(suffix)
+    if media is None:
+        raise ValueError(
+            f"Unsupported image extension {suffix!r}; "
+            f"expected one of {sorted(_IMAGE_MEDIA_TYPES)}"
+        )
+
+    section = _require_section(doc, section_index)
+    next_bin_id = (
+        max(
+            (
+                p.image.bin_data_id
+                for s in doc.sections
+                for p in s.paragraphs
+                if p.image is not None
+            ),
+            default=0,
+        )
+        + 1
+    )
+    href = f"BinData/image{next_bin_id}{suffix}"
+    doc.raw_zip[href] = src.read_bytes()
+
+    image = InlineImage(
+        bin_data_id=next_bin_id,
+        media_type=media,
+        href=href,
+        width_mm=float(width_mm),
+        height_mm=float(height_mm),
+    )
+    next_para_id = max((p.id for p in section.paragraphs), default=0) + 1
+    para = Paragraph(id=next_para_id, text="", image=image)
+    section.paragraphs.append(para)
+    return para
 
 
 def insert_table(

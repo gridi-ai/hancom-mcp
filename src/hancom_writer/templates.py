@@ -86,6 +86,90 @@ CONTAINER_RDF = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' \
 MANIFEST_XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>' \
     '<odf:manifest xmlns:odf="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"/>'
 
+# 1 mm in HWPUNIT (1 HWPUNIT = 1/7200 inch, 1 inch = 25.4 mm).
+_MM_TO_HWPUNIT = 7200.0 / 25.4
+
+
+def manifest_xml_with_images(images: list[dict] | None = None) -> str:
+    """Render META-INF/manifest.xml, optionally with image file-entries (B-01).
+
+    Each image dict carries ``href`` and ``media_type``. When the list is
+    empty the output matches the legacy bare manifest byte-for-byte so
+    image-free saves stay regression-safe.
+    """
+    if not images:
+        return MANIFEST_XML
+    entries = "".join(
+        f'<odf:file-entry full-path="{img["href"]}" media-type="{img["media_type"]}"/>'
+        for img in images
+    )
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+        '<odf:manifest xmlns:odf="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0">'
+        f'{entries}'
+        '</odf:manifest>'
+    )
+
+
+def inject_bin_data_list(header_xml: bytes, images: list[dict]) -> bytes:
+    """Splice a <hh:binDataList> into header.xml's <hh:refList> (B-01).
+
+    Inserted as the first child of refList because Hancom Office consistently
+    places binData ahead of fontfaces. Returns header_xml unchanged when
+    there are no images.
+    """
+    if not images:
+        return header_xml
+    items = "".join(
+        f'<hh:binData id="{img["bin_data_id"]}" type="EMBEDDING" href="{img["href"]}"/>'
+        for img in images
+    )
+    block = (
+        f'<hh:binDataList itemCnt="{len(images)}">'
+        f'{items}'
+        '</hh:binDataList>'
+    ).encode("utf-8")
+    marker = b"<hh:refList>"
+    idx = header_xml.find(marker)
+    if idx == -1:
+        return header_xml
+    insert_at = idx + len(marker)
+    return header_xml[:insert_at] + block + header_xml[insert_at:]
+
+
+def image_paragraph_xml(para_id: int, image: dict) -> str:
+    """Render a paragraph carrying an inline (treat-as-char) image (B-01).
+
+    The image dict needs ``bin_data_id``, ``width_mm``, ``height_mm``. We
+    emit the minimum <hp:pic> markup that survives HWPX validators; richer
+    attributes (effects, rendering matrices) can be added later if Hancom
+    Viewer needs them.
+    """
+    width = int(image["width_mm"] * _MM_TO_HWPUNIT)
+    height = int(image["height_mm"] * _MM_TO_HWPUNIT)
+    bin_id = image["bin_data_id"]
+    return (
+        f'<hp:p id="{para_id}" paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0">'
+        f'<hp:run charPrIDRef="0">'
+        f'<hp:pic id="{para_id}" zOrder="0" numberingType="PICTURE"'
+        f' textWrap="TOP_AND_BOTTOM" textFlow="BOTH_SIDES" lock="0"'
+        f' dropcapstyle="None" href="" groupLevel="0" instid="">'
+        f'<hp:offset x="0" y="0"/>'
+        f'<hp:orgSz width="{width}" height="{height}"/>'
+        f'<hp:curSz width="{width}" height="{height}"/>'
+        f'<hp:flip horizontal="0" vertical="0"/>'
+        f'<hp:rotationInfo angle="0" centerX="0" centerY="0"/>'
+        f'<hp:renderingInfo>'
+        f'<hc:transMatrix e1="1.0" e2="0.0" e3="0.0" e4="0.0" e5="1.0" e6="0.0"/>'
+        f'<hc:scaMatrix e1="1.0" e2="0.0" e3="0.0" e4="0.0" e5="1.0" e6="0.0"/>'
+        f'<hc:rotMatrix e1="1.0" e2="0.0" e3="0.0" e4="0.0" e5="1.0" e6="0.0"/>'
+        f'</hp:renderingInfo>'
+        f'<hp:img binDataIDRef="{bin_id}" bright="0" contrast="0" effect="REAL_PIC"/>'
+        f'</hp:pic>'
+        f'</hp:run>'
+        f'</hp:p>'
+    )
+
 # Script files (UTF-16LE encoded, matching Hancom Office output)
 HEADER_SCRIPTS = 'var Documents = XHwpDocuments;\nvar Document = Documents.Active_XHwpDocument;\n'.encode('utf-16-le')
 SOURCE_SCRIPTS = 'function OnDocument_New()\n{\n}\nfunction OnDocument_Open()\n{\n}\n'.encode('utf-16-le')
@@ -411,6 +495,13 @@ def section_xml(paragraphs: list[dict] | None = None) -> str:
     para_xml_parts = [sec_pr]
     if paragraphs:
         for i, p in enumerate(paragraphs, start=1):
+            image = p.get("image")
+            if image is not None:
+                # B-01: render an inline picture instead of a text run. Accepts
+                # either a dict or an InlineImage dataclass via __dict__.
+                img_dict = image if isinstance(image, dict) else image.__dict__
+                para_xml_parts.append(image_paragraph_xml(i, img_dict))
+                continue
             text = p.get("text", "")
             char_pr = "1" if p.get("bold") else "0"
             text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

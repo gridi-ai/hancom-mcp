@@ -11,6 +11,13 @@
 - 번들 Java 라이브러리(Apache 2.0)에 대한 `NOTICE` 및 `licenses/Apache-2.0.txt`.
 - `docs/BACKLOG.md` — rhwp 비교 분석 기반 우선순위 백로그(B-01~B-11, O-01~O-04).
 - `CONTRIBUTING.md` — `/ecc:plan → /ecc:tdd → /ecc:review-pr` 워크플로우.
+- **B-01** (MVP): `insert_image` — 인라인(treat-as-char) 이미지 삽입. PNG/JPEG
+  지원. 신규 도메인 모델 `InlineImage` (bin_data_id, media_type, href,
+  width_mm, height_mm). `editor.insert_image()` + 동명 MCP tool.
+  `_build_new_zip` 가 `META-INF/manifest.xml` 의 `<odf:file-entry>`,
+  `Contents/header.xml` 의 `<hh:binDataList>`, `Contents/section{N}.xml` 의
+  `<hp:pic>` 를 일관 emit. `_build_patched_zip` 경로(변환된 HWPX 에 이미지
+  추가) 는 후속 백로그.
 - **B-13**: 변환 직후 paragraph ID 정규화. 신규 모듈 `id_normalizer` 가
   `Contents/section{N}.xml` 안 모든 `<hp:p>` 의 `id` 를 섹션별로 1..N 순차
   unique 값으로 재부여한다. `<hp:secPr>` 를 가진 단락은 한컴 관례에 따라

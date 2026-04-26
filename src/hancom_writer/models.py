@@ -18,6 +18,21 @@ def ns(prefix: str, tag: str) -> str:
 
 
 @dataclass
+class InlineImage:
+    """An inline image (treat-as-char anchor) attached to a paragraph (B-01).
+
+    The bytes themselves live in ``HwpxDocument.raw_zip[href]`` so they round
+    trip through writer pack/unpack without an extra storage layer.
+    """
+
+    bin_data_id: int  # 1-based; matches <hh:binData id="..."> in header.xml
+    media_type: str  # "image/png" | "image/jpeg"
+    href: str  # e.g. "BinData/image1.png"
+    width_mm: float
+    height_mm: float
+
+
+@dataclass
 class Paragraph:
     id: int
     text: str
@@ -25,6 +40,7 @@ class Paragraph:
     char_pr_id: int = 0
     style_id: int = 0
     para_pr_id: int = 0
+    image: InlineImage | None = None
 
 
 @dataclass
