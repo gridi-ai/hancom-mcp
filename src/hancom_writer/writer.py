@@ -247,26 +247,60 @@ def _build_new_zip(doc: HwpxDocument) -> bytes:
     entries["settings.xml"] = T.SETTINGS_XML.encode("utf-8")
     entries["META-INF/container.xml"] = T.CONTAINER_XML.encode("utf-8")
     entries["META-INF/container.rdf"] = T.CONTAINER_RDF.encode("utf-8")
-    entries["META-INF/manifest.xml"] = T.MANIFEST_XML.encode("utf-8")
+
+    # B-01: collect inline images so manifest, header, and BinData/* stay
+    # consistent for the same set of pictures.
+    images = _collect_images(doc)
+    entries["META-INF/manifest.xml"] = T.manifest_xml_with_images(images).encode(
+        "utf-8"
+    )
     entries["Contents/content.hpf"] = T.content_hpf(
         title=doc.title, section_count=len(doc.sections)
     ).encode("utf-8")
     # Prefer the template-aware header that create_hwpx pre-populates.
-    entries["Contents/header.xml"] = doc.raw_zip.get(
+    header_bytes = doc.raw_zip.get(
         "Contents/header.xml", T.HEADER_XML.encode("utf-8")
     )
+    entries["Contents/header.xml"] = T.inject_bin_data_list(header_bytes, images)
     entries["Scripts/headerScripts"] = T.HEADER_SCRIPTS
     entries["Scripts/sourceScripts"] = T.SOURCE_SCRIPTS
 
     for section in doc.sections:
         entries[f"Contents/section{section.index}.xml"] = _render_section(section).encode("utf-8")
 
+    # Pass-through: image bytes were stashed under BinData/* by editor.insert_image.
+    for img in images:
+        href = img["href"]
+        if href in doc.raw_zip:
+            entries[href] = doc.raw_zip[href]
+
     entries["Preview/PrvText.txt"] = doc.get_all_text()[:500].encode("utf-8")
     return _pack_zip(entries)
 
 
+def _collect_images(doc: HwpxDocument) -> list[dict]:
+    images: list[dict] = []
+    for section in doc.sections:
+        for para in section.paragraphs:
+            if para.image is None:
+                continue
+            images.append(
+                {
+                    "bin_data_id": para.image.bin_data_id,
+                    "media_type": para.image.media_type,
+                    "href": para.image.href,
+                    "width_mm": para.image.width_mm,
+                    "height_mm": para.image.height_mm,
+                }
+            )
+    return images
+
+
 def _render_section(section: Section) -> str:
-    paras = [{"text": p.text, "bold": p.bold} for p in section.paragraphs]
+    paras = [
+        {"text": p.text, "bold": p.bold, "image": p.image}
+        for p in section.paragraphs
+    ]
     section_content = T.section_xml(paras)
 
     if not section.tables:

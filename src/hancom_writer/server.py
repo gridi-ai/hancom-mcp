@@ -282,6 +282,44 @@ def insert_text(
 
 
 @mcp.tool()
+def insert_image(
+    doc_id: str,
+    image_path: str,
+    width_mm: float,
+    height_mm: float,
+    section_index: int = 0,
+) -> str:
+    """문서에 인라인 이미지(treat-as-char) 단락을 추가합니다 (B-01 MVP).
+
+    PNG/JPEG 만 지원. width_mm·height_mm 는 한컴 뷰어 표시 크기.
+    create_document 로 만든 빈 문서 → insert_image → save_document 흐름을
+    가정한다. 변환된 HWPX(`open_document` 후 patched 저장) 에 이미지 추가는
+    별도 백로그에서 다룬다.
+    """
+    doc = _get_doc(doc_id)
+    para = editor.insert_image(
+        doc,
+        image_path=image_path,
+        width_mm=width_mm,
+        height_mm=height_mm,
+        section_index=section_index,
+    )
+    assert para.image is not None  # editor always sets it on success
+    return _dump(
+        {
+            "status": "inserted",
+            "section": section_index,
+            "paragraph_id": para.id,
+            "bin_data_id": para.image.bin_data_id,
+            "href": para.image.href,
+            "media_type": para.image.media_type,
+            "width_mm": para.image.width_mm,
+            "height_mm": para.image.height_mm,
+        }
+    )
+
+
+@mcp.tool()
 def list_styles(doc_id: str) -> str:
     """문서에 정의된 스타일 목록을 반환합니다 (개요 1, 머리말, 본문 등)."""
     doc = _get_doc(doc_id)
