@@ -7,7 +7,7 @@
 
 1. ✅ B-06 — 표준 스타일 자동 탑재 (PR #1, 머지 완료 2026-04-26)
 2. ✅ B-04 — `delete_paragraph` / `delete_table` / `clear_section` (PR #2 머지)
-3. ⏳ B-12 — patched 저장 표준 엔트리 자동 보충 (CRITICAL: 손상 경고 원인)
+3. ✅ B-12 — patched 저장 표준 엔트리 자동 보충 (PR 머지 예정)
 4. ⏳ B-13 — 변환 후 paragraph ID 정규화 (CRITICAL: hwp2hwpx ID 충돌)
 5. ⏳ B-14 — XML 직렬화 namespace 보존 (CRITICAL: ET 가 13개 prefix 제거)
 6. ⏳ B-01 — `insert_image`
