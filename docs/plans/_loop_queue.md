@@ -8,7 +8,7 @@
 1. ✅ B-06 — 표준 스타일 자동 탑재 (PR #1, 머지 완료 2026-04-26)
 2. ✅ B-04 — `delete_paragraph` / `delete_table` / `clear_section` (PR #2 머지)
 3. ✅ B-12 — patched 저장 표준 엔트리 자동 보충 (PR #3 머지)
-4. ⏳ B-15 — patched 저장 시 `<hp:linesegarray>` 통째 제거 (근본 해결책, 검증 완료)
+4. ✅ B-15 — patched 저장 시 `<hp:linesegarray>` 통째 제거 (근본 해결책)
 5. ⏳ B-13 — 변환 후 paragraph ID 정규화 (secPr id=0 보존, 검증 완료)
 6. ⏳ B-01 — `insert_image`
 7. ⏳ B-02 — `set_run_style` (CharShape)

@@ -11,6 +11,12 @@
 - 번들 Java 라이브러리(Apache 2.0)에 대한 `NOTICE` 및 `licenses/Apache-2.0.txt`.
 - `docs/BACKLOG.md` — rhwp 비교 분석 기반 우선순위 백로그(B-01~B-11, O-01~O-04).
 - `CONTRIBUTING.md` — `/ecc:plan → /ecc:tdd → /ecc:review-pr` 워크플로우.
+- **B-15**: patched 저장 시 모든 `<hp:linesegarray>` 요소를 raw section
+  XML 에서 제거. HWPX 단락이 캐시한 줄별 layout(textpos / textheight /
+  vertSize) 가 우리가 바꾼 텍스트 길이와 어긋나면 한컴 뷰어가 손상으로
+  판정하던 G2 케이스(같은 단락 안 2개 hp:t 변경, 합계 길이 −71)를 해결.
+  lineseg 가 없으면 한컴 뷰어가 첫 열기 때 자체 layout engine 으로 다시
+  계산한다(K2b 검증).
 - **B-12**: patched 저장 시 누락된 한컴 표준 엔트리 4종을 자동 보충.
   `Preview/PrvText.txt` (doc 전체 텍스트 500자), `Scripts/headerScripts`,
   `Scripts/sourceScripts`, `META-INF/container.rdf` 가 raw_zip 에 없으면
