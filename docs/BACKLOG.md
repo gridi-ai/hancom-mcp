@@ -97,13 +97,23 @@
 ### B-11 🔴 rhwp 뷰어에 MCP 변경 실시간 반영 (live preview)
 - **문제**: 매 `save_document` 후 수동 reload 가 아닌, 메모리 변경분을 즉시
   뷰어에 푸시하면 사업계획서 작성 흐름이 훨씬 빨라짐.
+- **전략 (사용자 지시)**:
+  1. `edwardkim/rhwp` 를 `gridi-ai/rhwp` 로 fork
+  2. fork 에 `ws://localhost:<port>` 리스너를 추가하여 외부 변경 이벤트를 수신,
+     `HwpDocument` 인스턴스를 즉시 재렌더링
+  3. hancom-mcp 측에 WS broadcaster 추가 — `insert_text`/`insert_table` 등
+     성공 직후 변경 페이로드 송출
+  4. fork 안정화 후 upstream `edwardkim/rhwp` 에 PR 로 제안
 - **수용 기준**:
-  - 로컬 WS 서버(`ws://localhost:<port>`) — 단락/표 변경 이벤트를 broadcast
-  - rhwp 측에 가벼운 패치 (Iframe `postMessage` 또는 자체 fork 의 listener 추가)
-  - `insert_text` 직후 100ms 안에 뷰어가 반영 (저장 없이)
-  - rhwp 자체가 이를 제공하지 않을 경우 우리가 fork 하거나 plugin 으로 기여
-- **선행조사**: rhwp 가 file watch / WS / postMessage 를 이미 노출하는지 확인
-  필요. 결과는 plan 단계에서 정리.
+  - hancom-mcp: `tools` 호출 직후 변경 이벤트가 WS 로 전송됨 (단위 테스트)
+  - gridi-ai/rhwp fork: WS 클라이언트 모듈 + 데모 페이지에서 라이브 갱신
+  - 100ms 이내 뷰어 반영 (저장 round-trip 없음)
+  - upstream PR draft 가 `edwardkim/rhwp` 에 열림 (자동 머지 보장은 없음)
+- **선행조사** (plan 단계):
+  - rhwp 의 현재 reload 트리거 방식 (파일 watch? 매 클릭마다 재파싱?)
+  - WS 인터페이스가 rhwp 디자인 원칙(Rust + WASM, no server runtime)과
+    충돌하지 않는지 확인. 충돌 시 `BroadcastChannel` 또는 `SharedWorker`
+    같은 브라우저 표준 대안 검토.
 
 ### B-09 🟢 `@rhwp/core` WASM 백엔드 통합 PoC
 - **문제**: 자체 XML 패칭은 한컴 호환성 한계가 있음.
