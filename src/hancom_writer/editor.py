@@ -103,6 +103,56 @@ def insert_table(
     return doc
 
 
+def delete_paragraph(
+    doc: HwpxDocument,
+    paragraph_id: int,
+    section_index: int | None = None,
+) -> Paragraph:
+    """Remove a paragraph by id. Raises LookupError if absent."""
+    for idx, section in enumerate(doc.sections):
+        if section_index is not None and idx != section_index:
+            continue
+        for i, para in enumerate(section.paragraphs):
+            if para.id == paragraph_id:
+                return section.paragraphs.pop(i)
+    raise LookupError(f"Paragraph id={paragraph_id} not found")
+
+
+def delete_table(
+    doc: HwpxDocument,
+    table_id: int,
+    section_index: int | None = None,
+) -> Table:
+    """Remove a table by id. Raises LookupError if absent."""
+    for idx, section in enumerate(doc.sections):
+        if section_index is not None and idx != section_index:
+            continue
+        for i, table in enumerate(section.tables):
+            if table.id == table_id:
+                return section.tables.pop(i)
+    raise LookupError(f"Table id={table_id} not found")
+
+
+def clear_section(
+    doc: HwpxDocument,
+    section_index: int = 0,
+    keep_styles: bool = True,
+) -> int:
+    """Remove all paragraphs and tables in a section.
+
+    Returns the count of removed items. ``keep_styles`` is a placeholder for a
+    future option that would also reset header.xml; currently styles are
+    always preserved (the ``Contents/header.xml`` payload in raw_zip is not
+    touched here).
+    """
+    section = _require_section(doc, section_index)
+    removed = len(section.paragraphs) + len(section.tables)
+    section.paragraphs.clear()
+    section.tables.clear()
+    _ = keep_styles  # reserved for future expansion
+    return removed
+
+
 def _require_section(doc: HwpxDocument, index: int):
     if index >= len(doc.sections):
         raise IndexError(f"Section {index} does not exist")

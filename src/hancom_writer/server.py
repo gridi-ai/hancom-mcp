@@ -412,6 +412,68 @@ def insert_table(
     )
 
 
+# ---------------------------------------------------------------------------
+# Content removal (B-04)
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+def delete_paragraph(
+    doc_id: str,
+    paragraph_id: int,
+    section_index: int | None = None,
+) -> str:
+    """단락 ID 로 단락을 삭제합니다. 미발견시 LookupError."""
+    doc = _get_doc(doc_id)
+    removed = editor.delete_paragraph(doc, paragraph_id, section_index=section_index)
+    return _dump(
+        {
+            "status": "deleted",
+            "paragraph_id": removed.id,
+            "text_preview": removed.text[:60],
+        }
+    )
+
+
+@mcp.tool()
+def delete_table(
+    doc_id: str,
+    table_id: int,
+    section_index: int | None = None,
+) -> str:
+    """표 ID 로 표를 삭제합니다. 미발견시 LookupError."""
+    doc = _get_doc(doc_id)
+    removed = editor.delete_table(doc, table_id, section_index=section_index)
+    return _dump(
+        {
+            "status": "deleted",
+            "table_id": removed.id,
+            "rows": len(removed.rows),
+            "cols": len(removed.rows[0]) if removed.rows else 0,
+        }
+    )
+
+
+@mcp.tool()
+def clear_section(
+    doc_id: str,
+    section_index: int = 0,
+    keep_styles: bool = True,
+) -> str:
+    """섹션의 모든 단락·표를 삭제합니다. keep_styles 는 향후 헤더 초기화 옵션 자리표시자."""
+    doc = _get_doc(doc_id)
+    removed = editor.clear_section(
+        doc, section_index=section_index, keep_styles=keep_styles
+    )
+    return _dump(
+        {
+            "status": "cleared",
+            "section_index": section_index,
+            "removed_count": removed,
+        }
+    )
+
+
 def main() -> None:
     mcp.run()
 

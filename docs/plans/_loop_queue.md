@@ -6,7 +6,7 @@
 ## 처리 순서
 
 1. ✅ B-06 — 표준 스타일 자동 탑재 (PR #1, 머지 완료 2026-04-26)
-2. ⏳ B-04 — `delete_paragraph` / `delete_table` / `clear_section`
+2. ✅ B-04 — `delete_paragraph` / `delete_table` / `clear_section` (PR 머지 예정)
 3. ⏳ B-01 — `insert_image`
 4. ⏳ B-02 — `set_run_style` (CharShape)
 5. ⏳ B-03 — 표 후편집 도구 묶음 (merge_cells, add_row 등)
