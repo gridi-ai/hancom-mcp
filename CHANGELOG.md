@@ -11,6 +11,11 @@
 - 번들 Java 라이브러리(Apache 2.0)에 대한 `NOTICE` 및 `licenses/Apache-2.0.txt`.
 - `docs/BACKLOG.md` — rhwp 비교 분석 기반 우선순위 백로그(B-01~B-11, O-01~O-04).
 - `CONTRIBUTING.md` — `/ecc:plan → /ecc:tdd → /ecc:review-pr` 워크플로우.
+- **B-04**: 콘텐츠 제거 도구 — `delete_paragraph(doc_id, paragraph_id)`,
+  `delete_table(doc_id, table_id)`, `clear_section(doc_id, section_index)`
+  세 개의 MCP 도구. 미발견 ID 는 `LookupError`. 빈 섹션에서는 no-op.
+  `writer._patch_section` 이 도메인 모델에서 빠진 단락·표를 raw XML 에서도
+  제거하도록 보강.
 - **B-06**: `create_document(template="default")` — 한컴 표준 22개 스타일 카탈로그
   (`바탕글, 본문, 개요 1..10, 머리말, 각주, 미주, 메모, 차례 제목,
   차례 1..3, 캡션, 쪽 번호`)를 새 문서에 자동 탑재.

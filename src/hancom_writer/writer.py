@@ -53,6 +53,7 @@ def _build_patched_zip(doc: HwpxDocument) -> bytes:
 
 def _patch_section(root, section: Section) -> None:
     para_map = {str(p.id): p for p in section.paragraphs}
+    table_id_set = {t.id for t in section.tables}
     cell_text_map = {
         (t.id, r_idx, c_idx): cell.para_texts
         for t in section.tables
@@ -60,6 +61,31 @@ def _patch_section(root, section: Section) -> None:
         for c_idx, cell in enumerate(row)
     }
 
+    # First: drop top-level paragraphs/tables that no longer exist in the
+    # domain model (B-04). Section-properties paragraph (with <hp:secPr>) is
+    # always retained.
+    sec_pr_qname = ns("hp", "secPr")
+    tbl_qname = ns("hp", "tbl")
+    p_qname = ns("hp", "p")
+    to_remove: list = []
+    for el in list(root):
+        if el.tag != p_qname:
+            continue
+        is_sec_props = any(e.tag == sec_pr_qname for e in el.iter(sec_pr_qname))
+        if is_sec_props:
+            continue
+        nested_tbl = next(iter(el.iter(tbl_qname)), None)
+        if nested_tbl is not None:
+            tbl_id = int(nested_tbl.get("id", "0"))
+            if tbl_id not in table_id_set:
+                to_remove.append(el)
+            continue
+        if el.get("id", "0") not in para_map:
+            to_remove.append(el)
+    for el in to_remove:
+        root.remove(el)
+
+    # Then: patch text/style of retained paragraphs.
     table_para_ids: set[str] = set()
     for tbl_el in root.iter(ns("hp", "tbl")):
         for inner_p in tbl_el.iter(ns("hp", "p")):
