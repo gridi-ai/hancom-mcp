@@ -113,6 +113,26 @@
   - 통합 테스트: convert → save → namespace 15개·XML 선언 형식 동일 여부 검증.
 - **참고**: 사용자 보고 (2026-04-26, B-12+B-13 후에도 손상 지속).
 
+### B-15 🔴 patched 저장 시 `<hp:linesegarray>` 통째 제거 (근본 해결책)
+- **문제**: HWPX `<hp:p>` 단락은 텍스트뿐 아니라 그 텍스트의 layout 결과
+  (`<hp:linesegarray>` — 줄별 textpos·textheight·vertSize 등) 를 함께
+  저장한다. 우리가 텍스트를 변경하면 lineseg 와 어긋난다. 단일 hp:t
+  변경에는 한컴 뷰어가 보정하지만, 같은 paragraph 안 다수 hp:t 변경
+  시 paragraph 합계 길이가 변하면 한컴이 거부한다.
+- **검증된 사실 (2026-04-26 사용자 한컴 뷰어 검증)**:
+  - F1·F2·F3 (단일 hp:t 변경) → 정상
+  - G2 (같은 paragraph 안 2개 hp:t 변경, 합계 길이 −71) → 손상
+  - I2·J1 (같은 paragraph 안 2개 변경, 합계 길이 보존) → 정상
+  - **K2b (영어 chunk 다수 제거 + 모든 `<hp:linesegarray>` 통째 제거) → 정상**
+- **근본 해결책**: 우리가 손댄 후 모든 `<hp:linesegarray>` 를 통째 제거하면
+  한컴 뷰어가 첫 열 때 자체 layout engine 으로 lineseg 를 자동 재생성한다.
+  WASM 의존 없이 순수 Python 패치만으로 해결 가능하다.
+- **수용 기준**:
+  - `_build_patched_zip` 이 텍스트가 변경된 단락의 (또는 모든 단락의)
+    `<hp:linesegarray>` 를 raw XML 에서 제거.
+  - 회귀: 기존 14개 + B-12 5개 테스트 통과.
+  - 통합 테스트: 영어 chunk 다수 제거 + lineseg 제거 → 한컴 정상 오픈.
+
 ## v0.3.x — hwpctl 호환 레이어
 
 ### B-07 🟠 Field API
