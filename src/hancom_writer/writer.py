@@ -8,6 +8,8 @@ from io import BytesIO
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
+from lxml import etree as LET
+
 from . import templates as T
 from . import xml_io
 from .models import HwpxDocument, Section, ns
@@ -46,6 +48,11 @@ def _build_patched_zip(doc: HwpxDocument) -> bytes:
             continue
         root = xml_io.parse(patched[section_path])
         _patch_section(root, section)
+        # B-15: invalidate the per-paragraph layout cache after every patched
+        # save so Hancom Viewer relayouts from runs. Done at the zip-level
+        # orchestrator (not inside _patch_section) so the strip is unmissable
+        # for future callers that patch sections for non-text reasons.
+        _strip_linesegarray(root)
         patched[section_path] = xml_io.serialize(root)
 
     _ensure_standard_boilerplate(patched, doc)
@@ -126,10 +133,8 @@ def _patch_section(root, section: Section) -> None:
             for c_idx, tc_el in enumerate(tr_el.findall(ns("hp", "tc"))):
                 _patch_cell(tc_el, (tbl_id, r_idx, c_idx), cell_text_map)
 
-    _strip_linesegarray(root)
 
-
-def _strip_linesegarray(root) -> None:
+def _strip_linesegarray(root: LET._Element) -> None:
     """Drop every <hp:linesegarray> so Hancom Viewer recomputes layout (B-15).
 
     HWPX paragraphs cache their per-line layout (textpos / textheight / vertSize)
@@ -138,6 +143,8 @@ def _strip_linesegarray(root) -> None:
     (verified by the G2 case: two hp:t edits in one paragraph, total length
     delta −71). Removing the cache forces Hancom Viewer to relayout from the
     runs, which is exactly what fixes the K2b verification case.
+
+    Requires lxml — the stdlib ElementTree has no ``getparent``.
     """
     lineseg_qname = ns("hp", "linesegarray")
     for lsa in list(root.iter(lineseg_qname)):
