@@ -11,6 +11,12 @@
 - 번들 Java 라이브러리(Apache 2.0)에 대한 `NOTICE` 및 `licenses/Apache-2.0.txt`.
 - `docs/BACKLOG.md` — rhwp 비교 분석 기반 우선순위 백로그(B-01~B-11, O-01~O-04).
 - `CONTRIBUTING.md` — `/ecc:plan → /ecc:tdd → /ecc:review-pr` 워크플로우.
+- **B-13**: 변환 직후 paragraph ID 정규화. 신규 모듈 `id_normalizer` 가
+  `Contents/section{N}.xml` 안 모든 `<hp:p>` 의 `id` 를 섹션별로 1..N 순차
+  unique 값으로 재부여한다. `<hp:secPr>` 를 가진 단락은 한컴 관례에 따라
+  `id="0"` 으로 보존(B-13a). `<hp:cellAddr>` 같은 비-단락 요소는 건드리지
+  않는다. `convert_hwp_to_hwpx(..., normalize_ids=True)` 가 기본값이며
+  `_run_jar` 직후·다른 후처리 이전에 호출된다.
 - **B-15**: patched 저장 시 모든 `<hp:linesegarray>` 요소를 raw section
   XML 에서 제거. HWPX 단락이 캐시한 줄별 layout(textpos / textheight /
   vertSize) 가 우리가 바꾼 텍스트 길이와 어긋나면 한컴 뷰어가 손상으로
