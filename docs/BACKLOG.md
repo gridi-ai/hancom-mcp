@@ -63,6 +63,25 @@
   - `default` 템플릿이 한컴 표준 25개 스타일 포함
 - **참고**: 이전 세션 검증 결과
 
+### B-12 🔴 patched 저장 시 누락된 표준 엔트리 자동 보충
+- **문제**: `hwp2hwpx.jar` 가 만든 HWPX 는 `Preview/PrvText.txt`,
+  `Scripts/headerScripts`, `Scripts/sourceScripts`, `META-INF/container.rdf`
+  등 한컴 뷰어가 기대하는 엔트리를 일부 빠뜨린다. 우리 `_build_patched_zip`
+  은 raw_zip 을 그대로 보존하므로 이 결손이 그대로 따라가서 한컴 뷰어가
+  "문서 손상" 으로 판단한다.
+- **재현**: 양식 hwp 변환 → `replace_text` 로 편집 → `save_document` →
+  한컴 뷰어로 열기 → 손상 경고. ZIP 자체는 무결.
+- **수용 기준**:
+  - `_build_patched_zip` 이 표준 엔트리 5종(`Preview/PrvText.txt`,
+    `Scripts/headerScripts`, `Scripts/sourceScripts`, `META-INF/container.rdf`,
+    `META-INF/manifest.xml` 보강) 누락 시 templates.py 의 보일러플레이트로
+    자동 채움.
+  - `Preview/PrvText.txt` 는 `doc.get_all_text()[:500]` 로 동적 생성.
+  - `container.xml` 의 rootfile 참조 중 ZIP 에 없는 엔트리는 참조 제거 또는
+    누락 엔트리 보충 — 일관성 검증.
+  - 양식 변환 → 편집 → 저장 → 한컴 뷰어 정상 오픈 통합 테스트.
+- **참고**: 사용자 보고 (2026-04-26)
+
 ## v0.3.x — hwpctl 호환 레이어
 
 ### B-07 🟠 Field API
