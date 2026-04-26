@@ -117,6 +117,12 @@ def inject_bin_data_list(header_xml: bytes, images: list[dict]) -> bytes:
     Inserted as the first child of refList because Hancom Office consistently
     places binData ahead of fontfaces. Returns header_xml unchanged when
     there are no images.
+
+    Raises ValueError when images are present but the marker is missing,
+    so a corrupt-and-silent header (binData manifest entry but no
+    binDataList) cannot escape the writer. The match accepts both the
+    bare ``<hh:refList>`` tag and the attribute-bearing
+    ``<hh:refList itemCnt="...">`` form found in real Hancom Office output.
     """
     if not images:
         return header_xml
@@ -129,11 +135,19 @@ def inject_bin_data_list(header_xml: bytes, images: list[dict]) -> bytes:
         f'{items}'
         '</hh:binDataList>'
     ).encode("utf-8")
-    marker = b"<hh:refList>"
-    idx = header_xml.find(marker)
-    if idx == -1:
-        return header_xml
-    insert_at = idx + len(marker)
+    open_tag = b"<hh:refList"
+    start = header_xml.find(open_tag)
+    if start == -1:
+        raise ValueError(
+            f"inject_bin_data_list: <hh:refList> open tag not found in header "
+            f"({len(header_xml)} bytes); cannot register {len(images)} image(s)"
+        )
+    end = header_xml.find(b">", start + len(open_tag))
+    if end == -1:
+        raise ValueError(
+            "inject_bin_data_list: malformed <hh:refList ...> tag (no closing '>')"
+        )
+    insert_at = end + 1
     return header_xml[:insert_at] + block + header_xml[insert_at:]
 
 

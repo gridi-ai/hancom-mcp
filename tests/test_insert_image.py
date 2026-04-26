@@ -163,6 +163,60 @@ def test_save_registers_image_in_header_bin_data_list(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+def test_inject_bin_data_list_handles_attribute_bearing_reflist(
+    tmp_path: Path,
+) -> None:
+    """Real Hancom headers use <hh:refList itemCnt="..."> — splice must
+    survive the attribute-bearing form, not just the bare opening tag."""
+    from hancom_writer import templates as T
+
+    real_world_header = (
+        b'<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>'
+        b'<hh:head xmlns:hh="x" version="1.5" secCnt="1">'
+        b'<hh:refList itemCnt="3">'
+        b'<hh:fontfaces itemCnt="0"/>'
+        b'</hh:refList>'
+        b'</hh:head>'
+    )
+    images = [
+        {"bin_data_id": 1, "media_type": "image/png", "href": "BinData/x.png",
+         "width_mm": 10, "height_mm": 10}
+    ]
+    out = T.inject_bin_data_list(real_world_header, images)
+    # binDataList lands immediately after the opening tag, before fontfaces.
+    open_tag_end = out.index(b'<hh:refList itemCnt="3">') + len(
+        b'<hh:refList itemCnt="3">'
+    )
+    assert out[open_tag_end : open_tag_end + len(b"<hh:binDataList")] == (
+        b"<hh:binDataList"
+    )
+
+
+@pytest.mark.unit
+def test_inject_bin_data_list_raises_when_marker_missing() -> None:
+    from hancom_writer import templates as T
+
+    bogus_header = b'<?xml version="1.0"?><hh:head><hh:other/></hh:head>'
+    with pytest.raises(ValueError, match="refList"):
+        T.inject_bin_data_list(
+            bogus_header,
+            [{"bin_data_id": 1, "media_type": "image/png",
+              "href": "BinData/x.png", "width_mm": 10, "height_mm": 10}],
+        )
+
+
+@pytest.mark.unit
+def test_insert_image_refuses_to_overwrite_existing_bindata(tmp_path: Path) -> None:
+    """Loaded docs may already carry BinData/image1.png — silent overwrite
+    would corrupt the original asset, so we refuse instead."""
+    doc = _fresh_doc()
+    doc.raw_zip["BinData/image1.png"] = b"existing original asset bytes"
+    img_path = _write_png(tmp_path)
+    with pytest.raises(RuntimeError, match="already exists"):
+        editor.insert_image(doc, str(img_path), width_mm=10, height_mm=10)
+
+
+@pytest.mark.unit
 def test_save_emits_pic_element_in_section_xml(tmp_path: Path) -> None:
     doc = _fresh_doc()
     img_path = _write_png(tmp_path)

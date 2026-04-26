@@ -106,6 +106,12 @@ def insert_image(
     inline with text). Bytes are read once and stashed on the document under
     ``BinData/imageN.<ext>``; the writer emits the corresponding manifest,
     header binDataList, and ``<hp:pic>`` markup at save time.
+
+    MVP scope: only fresh documents (``create_document``). Inserting into a
+    doc that was loaded from disk and already carries pre-existing
+    ``BinData/`` entries raises ``RuntimeError`` because our id allocator
+    does not yet read those entries — patched-save image insertion is
+    tracked separately.
     """
     src = Path(image_path)
     if not src.exists():
@@ -132,6 +138,13 @@ def insert_image(
         + 1
     )
     href = f"BinData/image{next_bin_id}{suffix}"
+    if href in doc.raw_zip:
+        # Pre-existing BinData/* from a loaded HWPX would be silently
+        # overwritten — refuse rather than corrupt the original asset.
+        raise RuntimeError(
+            f"BinData entry {href!r} already exists in doc.raw_zip; "
+            "insert_image on documents loaded from disk is not yet supported."
+        )
     doc.raw_zip[href] = src.read_bytes()
 
     image = InlineImage(
