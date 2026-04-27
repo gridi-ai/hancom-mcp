@@ -169,10 +169,6 @@ CHANGELOG 갱신
 - [hwplib](https://github.com/neolord0/hwplib)
 - [hwpxlib](https://github.com/neolord0/hwpxlib)
 
-## 영감
-
-오픈소스 한컴 에디터 [`rhwp`](https://github.com/edwardkim/rhwp) (Rust + WASM, MIT License) 의 기능 비교를 통해 백로그를 도출했습니다. `rhwp` 의 코드는 본 저장소에 포함되어 있지 않습니다.
-
 ## 문의·이슈
 
 - 버그·기능 요청: [GitHub Issues](https://github.com/gridi-ai/hancom-mcp/issues)
