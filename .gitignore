@@ -64,6 +64,7 @@ pnpm-lock.yaml
 .mcp.json
 .claude/
 CLAUDE.local.md
+AGENTS.md
 
 # ============================================================================
 # Java build outputs (not the bundled JARs in lib/)
